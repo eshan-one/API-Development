@@ -1,8 +1,30 @@
+from typing import Optional
+
 from fastapi import FastAPI
 from fastapi.params import Body
+from pydantic import BaseModel
+from random import randrange
+
+
 app = FastAPI()
 
-# path operation to start the server
+class Post(BaseModel):
+    title: str
+    content: str
+    published: bool = True
+    rating: Optional[int] = None
+    
+    
+
+
+my_posts = [{"title": "title of post 1", "content": "content of post 1", "id": 1}, {"title": "title of post 2", "content": "content of post 2", "id": 2}]
+
+def find_post(id):
+    for p in my_posts:
+        if p["id"] == id:
+            return p
+
+
 
 # request GET method url:  "/"
 @app.get("/")
@@ -12,14 +34,25 @@ async def root():
 
 @app.get("/posts")
 async def get_posts():
-    return {"data": "This is the list of posts!"}
+    return {"data": my_posts}
 
 
-@app.post("/createPosts")
-async def create_posts(payload: dict = Body(...)):
-    print(payload)
-    return {"new_post": f"title: {payload['title']} content: {payload['content']}"}
+@app.post("/posts")
+async def create_posts(post: Post):
+   post_dict = post.model_dump()
+   post_dict["id"] = randrange(0, 1000000)
+   my_posts.append(post_dict)
+   return {"data": post_dict}
 
 
-# The first path operation that matches the request will be executed, so the order of the path operations matters. 
-# In this case, if we put the path operation with the path parameter before the one without it, it would never be executed because the path parameter would match all requests. Therefore, we need to put the path operation without the path parameter first, followed by the one with the path parameter.
+""" @app.get("/posts/recent/latest")
+def get_latest_post():
+   latest_post = my_posts[len(my_posts) - 1]
+   return {"latest_post": latest_post} """
+
+@app.get("/posts/{id}")
+def get_post(id: int):
+   post = find_post(id)
+   return {"post_detail": post}
+
+
